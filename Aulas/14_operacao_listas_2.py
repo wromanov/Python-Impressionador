@@ -14,6 +14,7 @@ print(menos_vendidos)
 indice_produto_max = lista_vendas.index(mais_vendidos)
 indice_produto_min = lista_vendas.index(menos_vendidos)
 
+produto_mais_vendido = lista_produtos[indice_produto_max]
 
-
+print(produto_mais_vendido)
 
