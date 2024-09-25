@@ -30,9 +30,34 @@ print(lista_produtos)
 
 #Removendo Item da lista pelo índice
 produto_removido = lista_produtos.pop(0) #podemos colocar o pop dentro de uma váriavel para exibir o produto removido.
-print(f'Produto removido "{produto_removido}", lista de produtos: {lista_estoque}')
+print(lista_produtos)
 
 #Removendo Item da lista pelo nome do item
-lista_produtos.remove('celular')
-print(lista_produtos)
+# lista_produtos.remove('celular')
+# print(lista_produtos)
+
+#Codigo para automatizar a remoção de item da lista
+produto_remover = input('Insira o produto que deseja remover: ').lower().strip()
+
+if produto_remover in lista_produtos:
+    lista_produtos.remove(produto_remover)
+    print(f'Produto removido "{produto_remover}", lista de produtos: {lista_produtos}')
+else:
+    print(f'Produto {produto_remover} não existe na lista de produtos: {lista_produtos}.')
+
+
+#Removendo Item da lista pelo nome do item
+# lista_produtos.remove('celular')
+# print(lista_produtos)
+
+"""
+Diferente do IF que eu preciso verificar se existe um o elemento que quero remover na lista, 
+com o Try, podemos pedir para remover direto, se houver erro, é tratado como exceção e o programa não finaliza.
+"""
+produto_remover2 = input('Informe o produto que deseja remover: ').lower().strip()
+try:
+    lista_produtos.remove(produto_remover2)
+    print(f'Produto "{produto_remover2}" removido da lista.')
+except:
+    print(f'Produto {produto_remover2} não existe na lista.')
 
