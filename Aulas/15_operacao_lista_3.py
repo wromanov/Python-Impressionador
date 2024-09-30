@@ -20,5 +20,13 @@ print(produtos)
 #Somando itens de uma lista
 print(valores1[1] + valores2[3])
 
-#Ordenar listas em ordem alfabetica, sendo que letras maiusculas tem precedencia.
-print(produtos.sort())
+#Ordenar listas em ordem alfabética, sendo que letras maiúsculas tem precedência.
+produtos.sort()
+valores1.sort()
+
+print(produtos)
+print(valores1)
+
+#ordenar na ordem reversa
+produtos.sort(reverse=True)
+print(produtos)

@@ -1,7 +1,7 @@
 lista_produtos = ['tv', 'celular', 'tablet', 'mouse', 'teclado', 'geladeira', 'forno']
 lista_estoque = [100, 150, 100, 120, 70, 180, 80]
 
-#Descobrindo a posição de um item numa lista.
+# Descobrindo a posição de um item numa lista.
 # item_index = produtos.index('tv')
 # print(f"O produto {produtos[item_index]} está na posição {item_index} da lista, e possui {estoque[item_index]} unidades em estoque.")
 
@@ -20,19 +20,18 @@ else:
 
 """Adicionado e Removendo Itens de uma Lista."""
 
-#Adicionando item no final da lista
+# Adicionando item no final da lista
 lista_produtos.append('Microondas')
 print(lista_produtos)
 
-#Removendo Item do final da lista
+# Removendo Item do final da lista
 lista_produtos.pop()
 print(lista_produtos)
 
-#Removendo Item da lista pelo índice
-produto_removido = lista_produtos.pop(0) #podemos colocar o pop dentro de uma váriavel para exibir o produto removido.
+# Removendo Item da lista pelo índice
+produto_removido = lista_produtos.pop(0)  # podemos colocar o pop dentro de uma váriavel para exibir o produto removido.
 print(lista_produtos)
-
-#Removendo Item da lista pelo nome do item
+# Removendo Item da lista pelo nome do item
 # lista_produtos.remove('celular')
 # print(lista_produtos)
 
