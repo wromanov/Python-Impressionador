@@ -87,8 +87,8 @@ vendas = {'VE0001': (9868, 'Concluído', ''), 'VE0002': (9642, 'Concluído', '')
 def calculo_stockout(dicionario_vendas):
     numerador = 0
     denominador = 0
-    for venda in dicionario_vendas:
-        valor, status, motivo = dicionario_vendas[venda]
+    for venda, (valor, status, motivo) in dicionario_vendas.items():
+        #valor, status, motivo = dicionario_vendas[venda]
         if status == 'Concluído':
             denominador += valor
         elif status == 'Cancelado' and motivo == 'Estoque em Falta':
