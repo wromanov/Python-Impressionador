@@ -60,3 +60,10 @@ print(f'Dia da semana: {tempo_local_atual.tm_wday}')
 print(f'Dia do ano: {tempo_local_atual.tm_yday}')
 
 print(f'Time zone: {tempo_local_atual.tm_zone}')
+
+acao = 'ITAU4 MAGALU4'
+
+lista = acao.split(' ')
+
+lista2 = [item + '.SA' for item in lista]
+print(lista2)
