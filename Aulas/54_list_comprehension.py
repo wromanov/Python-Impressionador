@@ -57,6 +57,7 @@ print(acoes2)
 
 vendas_produtos = [1500, 150, 2100, 1950]
 produtos = ['vinho', 'cafeiteira', 'microondas', 'iphone']
+meta = 1000
 
 # Transforma as duas listas em uma tupla com os itens relacionados
 lista_aux = list(zip(vendas_produtos, produtos))
@@ -68,3 +69,10 @@ lista_aux.sort(reverse=True)
 produtos = [produto for vendas, produto in lista_aux]
 
 print(produtos)
+
+# List Comprehensions com if para "filtrar" itens
+# Estrutura
+# lista = [expressão for item in iterable if condição]
+
+produtos_acima_meta = [produto for i, produto in enumerate(produtos) if vendas_produtos[i] > meta]
+print(produtos_acima_meta)
