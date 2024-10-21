@@ -50,3 +50,21 @@ acoes = "ITUB4 MGLU3 MLAS3 PRIO3 PETR4 VALE3 WEGE3 POSI3"
 acoes_modificadas = acoes.split(' ')
 acoes2 = [f'{papel}.SA' for papel in acoes_modificadas]
 print(acoes2)
+
+
+# Um exemplo prático de List Comprehension
+### O que faríamos se quisermos ordenar 2 listas "relacionadas"
+
+vendas_produtos = [1500, 150, 2100, 1950]
+produtos = ['vinho', 'cafeiteira', 'microondas', 'iphone']
+
+# Transforma as duas listas em uma tupla com os itens relacionados
+lista_aux = list(zip(vendas_produtos, produtos))
+
+# Ordena a lista do menor para o maior
+lista_aux.sort(reverse=True)
+
+# Faz o upacking da tupla, e coloca o nome dos produtos na lista
+produtos = [produto for vendas, produto in lista_aux]
+
+print(produtos)
