@@ -37,12 +37,11 @@ print(ativos2)
 # Da forma tradicional, faríamos:
 
 lista_numeros = []
-for elemento in range(0,11):
-    lista_numeros.append(elemento**2)
+for elemento in range(0, 11):
+    lista_numeros.append(elemento ** 2)
     print(lista_numeros)
 
-lista_numeros2 = [elemento**2 for elemento in range(0,11)]
-
+lista_numeros2 = [elemento ** 2 for elemento in range(0, 11)]
 
 # Adicione um ".SA" ao fim de cada papel
 
@@ -50,7 +49,6 @@ acoes = "ITUB4 MGLU3 MLAS3 PRIO3 PETR4 VALE3 WEGE3 POSI3"
 acoes_modificadas = acoes.split(' ')
 acoes2 = [f'{papel}.SA' for papel in acoes_modificadas]
 print(acoes2)
-
 
 # Um exemplo prático de List Comprehension
 ### O que faríamos se quisermos ordenar 2 listas "relacionadas"
@@ -76,3 +74,21 @@ print(produtos)
 
 produtos_acima_meta = [produto for i, produto in enumerate(produtos) if vendas_produtos[i] > meta]
 print(produtos_acima_meta)
+
+# List Comprehension com if para escolher o resultado final
+# Estrutura:
+# lista = [item if condicao else outro_resultado for item in iterable]
+
+vendedores_dic = {'Maria': 1200, 'José': 300, 'Antônio': 800, 'João': 1500, 'Francisco': 1900, 'Ana': 2750, 'Luiz': 400,
+                  'Paulo': 20, 'Carlos': 23, 'Manoel': 70, 'Pedro': 90, 'Francisca': 80, 'Marcos': 1100,
+                  'Raimundo': 999, 'Sebastião': 900, 'Antônia': 880, 'Marcelo': 870, 'Jorge': 50, 'Márcia': 1111,
+                  'Geraldo': 120, 'Adriana': 300, 'Sandra': 450, 'Luis': 800}
+meta = 1000
+
+"""
+- Digamos que eu esteja analisando os vendedores de uma loja e queira criar uma lista para enviar para o RH com o bônus de cada vendedor.
+- O bônus é dado por 10% do valor de vendas dele, caso ele tenha batido a meta
+"""
+
+lista_numeros2 = [valor * 1.10 if valor > meta else 0 for valor in vendedores_dic.values()]
+print(lista_numeros2)
