@@ -1,5 +1,7 @@
 # Se não tiver nenhum parâmetro na classe, pode remover os parenteses.
 from datetime import datetime
+from random import randint
+
 import pytz
 
 
@@ -26,7 +28,7 @@ class ContaCorrente:
         self.num_conta = num_conta
         self.transacoes = []
         self.__idade = None  # Ao usar dois underscores o argumento fica indisponível, se tornando privado da classe.
-        self._cartoes = []
+        self.cartoes = []
 
     # Padrão de nome de funções é snake_case
     # 'Underline' Sinaliza que esse o método é 'privado' feito apenas para ser usado dentro da classe.
@@ -82,49 +84,42 @@ class ContaCorrente:
 
 # Relacionado Classes
 class CartaoCredito:
+    """
+        Métodos estáticos são funções da classe que não dependem de uma instância específica da classe e,
+        portanto, não precisam acessar ou modificar o estado da instância (ou seja,
+        os atributos de self). Como _data_hora apenas obtém e retorna a data e hora, ela não precisa usar o self.
+    """
+
+    @staticmethod
+    def _data_hora():
+        fuso_BR = pytz.timezone('Brazil/East')
+        horario_BR = datetime.now(fuso_BR)
+        return horario_BR
+
     def __init__(self, titular, conta_corrente):
-        self.numero = 123
+        self.numero = randint(1000_000_000, 9999_999_999)
         self.titular = titular
-        self.validade = None
-        self.cod_seguranca = None
-        self.limite = None
+        self.validade = f'{CartaoCredito._data_hora().month}/{CartaoCredito._data_hora().year} '
+        self.cod_seguranca = f'{randint(100, 999)} {randint(100, 999)} {randint(100, 999)}'
+        self.limite = 1000
+        self._senha = '1234'
         self.conta_corrente = conta_corrente
-        conta_corrente._cartoes.append(self)  # inserindo a propria classe (Objeto CartaoCredito) cartões na lista
-        #self.conta_corrente = conta_corrente.numero #poderia adicionar somente o numero do cartao na lista
+        conta_corrente.cartoes.append(self)  # inserindo a propria classe (Objeto CartaoCredito) cartões na lista
+        # self.conta_corrente = conta_corrente.numero #poderia adicionar somente o numero do cartao na lista
+
+    # Método Get
+    @property
+    def senha(self):
+        return self._senha
+
+    # Método Set
+    @senha.setter
+    def senha(self, senha):
+        if len(senha) > 3 and senha.isnumeric():
+            self._senha = senha
+        else:
+            print('A nova senha não atende os requisitos de segurança.')
 
 
-# Programa
-ContaCorrente_Walace = ContaCorrente('Walace Delgado', '140.887.137-88', 12345, 33214, 34)
-ContaCorrente_Eliane = ContaCorrente('Eliane Delgado', '010.428.867-17', 22307, 54321, 30)
-
-# Realizando Transferencia
-ContaCorrente_Walace.transferir(1500, ContaCorrente_Eliane)
-
-# Adicionando cheque especial de $$ 1000
-# ContaCorrente.limite_conta(1000)
-
-# Realizando Deposito
-ContaCorrente_Walace.depositar(10000)
-
-# Consultando Saldo
-print(
-    f'Olá {ContaCorrente_Walace.consultar_primeiro_nome()}, seu saldo atual é R${ContaCorrente_Walace.consultar_saldo()}, '
-    f'limite de cheque especial R$ {ContaCorrente_Walace.consultar_cheque_especial()}.')
-
-# Realizando Saque
-ContaCorrente_Walace.sacar(1700)
-
-# Consultando Saldo
-print(
-    f'Olá {ContaCorrente_Walace.consultar_primeiro_nome()}, seu saldo atual é R${ContaCorrente_Walace.consultar_saldo()}, '
-    f'limite de cheque especial R$ {ContaCorrente_Walace.consultar_cheque_especial()}.')
-
-print('-' * 72)
-ContaCorrente_Walace.consultar_transacoes()
-
-print('-' * 72)
-ContaCorrente_Eliane.consultar_transacoes()
-
-Cartao_Walace = CartaoCredito('Walace', ContaCorrente_Walace)
-print(Cartao_Walace.conta_corrente.num_conta)
-print(ContaCorrente_Walace._cartoes[0].numero)
+#Listar os atributos da instancia e seus valores
+#objeto.__dict__
