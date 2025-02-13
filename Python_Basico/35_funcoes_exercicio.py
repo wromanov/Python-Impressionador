@@ -24,6 +24,7 @@ produtos = ['BEB46275', 'TFA23962', 'TFA64715', 'TFA69555', 'TFA56743', 'BSA4551
             'BEB79496', 'CAR38417', 'TFA19947', 'TFA58799', 'CAR94811', 'BSA59251', 'BEB15385', 'BEB24213', 'BEB56262',
             'BSA96915', 'CAR53454', 'BEB75073']
 
+
 # Verifica se a bebida é alcolica.
 def iscategory(bebida, cod_bebida):
     bebida = bebida.upper()

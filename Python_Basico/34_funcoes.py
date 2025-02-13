@@ -4,6 +4,7 @@
 # 3 - Após o return nada mais é executado.
 # 4 - As funções ficam no ínicio do código
 
+# Definindo a Função
 def minha_funcao(valor1, valor2):
     soma = valor1 + valor2
     return soma
