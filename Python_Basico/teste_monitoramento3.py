@@ -11,30 +11,33 @@ import re
 from logging.handlers import RotatingFileHandler
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QLineEdit,
-    QLabel, QMessageBox, QGroupBox, QFileDialog, QScrollArea, QDialog
+    QLabel, QMessageBox, QGroupBox, QFileDialog, QScrollArea, QDialog, QGraphicsDropShadowEffect
 )
 from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtGui import QIcon, QPixmap, QFont
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.dates as mdates
-
 
 # Estilos para os temas
 TEMA_CLARO = """
     QWidget {
         background-color: #f0f0f0;
         color: #000000;
+        font-size: 12px;
     }
     QLineEdit, QListWidget, QGroupBox {
         background-color: #ffffff;
         color: #000000;
         border: 1px solid #cccccc;
+        font-size: 12px;
     }
     QPushButton {
         background-color: #0078d7;
         color: #ffffff;
         border: none;
         padding: 5px;
+        font-size: 12px;
     }
     QPushButton:hover {
         background-color: #005bb5;
@@ -45,22 +48,92 @@ TEMA_ESCURO = """
     QWidget {
         background-color: #2d2d2d;
         color: #ffffff;
+        font-size: 12px;
     }
     QLineEdit, QListWidget, QGroupBox {
         background-color: #3c3c3c;
         color: #ffffff;
         border: 1px solid #555555;
+        font-size: 12px;
     }
     QPushButton {
         background-color: #555555;
         color: #ffffff;
         border: none;
         padding: 5px;
+        font-size: 12px;
     }
     QPushButton:hover {
         background-color: #777777;
     }
 """
+
+TEMA_MODERNO = """
+    QWidget {
+        background-color: #2E3440;
+        color: #D8DEE9;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+    }
+    QLineEdit, QListWidget, QGroupBox {
+        background-color: #3B4252;
+        color: #D8DEE9;
+        border: 1px solid #4C566A;
+        border-radius: 5px;
+        padding: 8px;
+        font-size: 14px;
+    }
+    QPushButton {
+        background-color: #5E81AC;
+        color: #ECEFF4;
+        border: none;
+        border-radius: 5px;
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+    QPushButton:hover {
+        background-color: #81A1C1;
+    }
+    QPushButton:pressed {
+        background-color: #4C566A;
+    }
+    QLabel {
+        color: #ECEFF4;
+        font-size: 14px;
+    }
+    QScrollArea {
+        border: none;
+    }
+    QGroupBox {
+        font-weight: bold;
+        margin-top: 20px;
+        padding-top: 10px;
+    }
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        subcontrol-position: top left;
+        padding: 0 5px;
+    }
+"""
+
+
+# Configuração do logger global
+def configurar_logger():
+    """Configura o logger global para o sistema."""
+    logger = logging.getLogger("Monitoramento")
+    logger.setLevel(logging.INFO)
+
+    # Cria o diretório de logs se não existir
+    if not os.path.exists("logs"):
+        os.makedirs("logs")
+
+    # Cria um handler para escrever no arquivo de log
+    handler = RotatingFileHandler("logs/monitoramento.log", maxBytes=5 * 1024 * 1024, backupCount=3)  # 5 MB por arquivo
+    handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s", datefmt="%d-%m-%Y %H:%M:%S"))
+
+    # Adiciona o handler ao logger
+    logger.addHandler(handler)
+    return logger
 
 
 # Classe para exibir gráficos de histórico
@@ -125,7 +198,7 @@ class GraficoHistorico(QDialog):
         status = [1 if s == "ONLINE" else 0 for _, s in historico_filtrado]  # 1 para ONLINE, 0 para OFFLINE
 
         self.ax.clear()
-        self.ax.plot(timestamps, status, marker='o', linestyle='-', color='b')
+        self.ax.plot(timestamps, status, marker='o', linestyle='-', color='b', label="Status")
         self.ax.set_yticks([0, 1])
         self.ax.set_yticklabels(["OFFLINE", "ONLINE"])
         self.ax.set_xlabel("Tempo")
@@ -133,36 +206,62 @@ class GraficoHistorico(QDialog):
         self.ax.set_title(f"Histórico de Uptime/Downtime - {periodo.capitalize()}")
         self.ax.xaxis.set_major_formatter(mdates.DateFormatter("%d-%m-%Y %H:%M:%S"))
         self.ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+        self.ax.grid(True, linestyle='--', alpha=0.7)  # Adiciona grades
+        self.ax.legend(loc="upper right")  # Adiciona legenda
         self.figure.autofmt_xdate()
         self.canvas.draw()
 
 
 # Classe para a Tela de Monitoramento
 class TelaMonitoramento(QWidget):
-    def __init__(self, equipamentos, status_equipamentos, log_file_path):
+    def __init__(self, equipamentos, status_equipamentos, log_file_path, tema="moderno"):
         super().__init__()
         self.equipamentos = equipamentos
         self.status_equipamentos = status_equipamentos
         self.log_file_path = log_file_path
+        self.tema_atual = tema  # Tema inicial
         self.setWindowTitle("Monitoramento de Equipamentos")
-        self.setGeometry(100, 100, 1000, 600)
+        self.setGeometry(100, 100, 1200, 800)  # Aumentar tamanho da janela
+
+        # Lista para armazenar os últimos eventos
+        self.ultimos_eventos = []
 
         # Layout principal (vertical)
         self.layout = QVBoxLayout()
+        self.layout.setSpacing(20)  # Aumentar espaçamento entre os widgets
+        self.layout.setContentsMargins(20, 20, 20, 20)  # Aumentar margens ao redor do layout
         self.setLayout(self.layout)
 
+        # Botão para alternar temas
+        self.botao_tema = QPushButton("Alternar Tema (Claro)")
+        self.botao_tema.clicked.connect(self.alternar_tema)
+        self.botao_tema.setIcon(QIcon("icone_tema.png"))
+        self.layout.addWidget(self.botao_tema)
 
         # Caixa de status (online/offline)
         self.caixa_status = QGroupBox("Status dos Equipamentos")
-        self.caixa_status.setStyleSheet("QGroupBox { font-weight: bold; }")
+        self.caixa_status.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                margin: 10px;
+                padding: 20px;
+                border: 2px solid #4C566A;
+                border-radius: 10px;
+                font-size: 24px;
+            }
+            QLabel {
+                margin: 10px;
+                font-size: 24px;
+            }
+        """)
         status_layout = QHBoxLayout()
 
         self.label_online = QLabel("Online: 0")
-        self.label_online.setStyleSheet("color: green; font-size: 14px;")
+        self.label_online.setStyleSheet("color: green; font-size: 24px;")
         status_layout.addWidget(self.label_online)
 
         self.label_offline = QLabel("Offline: 0")
-        self.label_offline.setStyleSheet("color: red; font-size: 14px;")
+        self.label_offline.setStyleSheet("color: red; font-size: 24px;")
         status_layout.addWidget(self.label_offline)
 
         self.caixa_status.setLayout(status_layout)
@@ -186,34 +285,121 @@ class TelaMonitoramento(QWidget):
         # Layout para o conteúdo rolável
         self.scroll_layout = QVBoxLayout(self.scroll_content)
 
-        # Layout para as colunas de online/offline
+        # Layout para as colunas de online/offline e eventos
         self.colunas_layout = QHBoxLayout()
+        self.colunas_layout.setSpacing(10)  # Espaçamento entre as colunas
         self.scroll_layout.addLayout(self.colunas_layout)
 
         # Coluna para ativos online
         self.online_column = QVBoxLayout()
         self.online_column.setAlignment(Qt.AlignTop)
+        self.online_column.setSpacing(5)
         self.colunas_layout.addLayout(self.online_column)
 
         # Coluna para ativos offline
         self.offline_column = QVBoxLayout()
         self.offline_column.setAlignment(Qt.AlignTop)
+        self.offline_column.setSpacing(5)
         self.colunas_layout.addLayout(self.offline_column)
+
+        # Coluna para últimos eventos
+        self.eventos_column = QVBoxLayout()
+        self.eventos_column.setAlignment(Qt.AlignTop)
+        self.eventos_column.setSpacing(5)
+        self.colunas_layout.addLayout(self.eventos_column)
 
         # Títulos das colunas
         online_label = QLabel("Ativos Online")
-        online_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+        online_label.setStyleSheet("font-size: 20px; font-weight: bold;")
         self.online_column.addWidget(online_label)
 
         offline_label = QLabel("Ativos Offline")
-        offline_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+        offline_label.setStyleSheet("font-size: 20px; font-weight: bold;")
         self.offline_column.addWidget(offline_label)
+
+        # Caixa de eventos
+        self.caixa_eventos = QGroupBox("Últimos Eventos")
+        self.caixa_eventos.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                margin: 10px;
+                padding: 10px;
+                border: 2px solid #4C566A;
+                border-radius: 10px;
+                font-size: 18px;
+            }
+        """)
+        eventos_layout = QVBoxLayout()
+        self.lista_eventos = QListWidget()
+        self.lista_eventos.setMaximumHeight(200)  # Define uma altura máxima para a lista de eventos
+        self.lista_eventos.setStyleSheet("""
+            QListWidget {
+                background-color: #3B4252;
+                color: #D8DEE9;
+                border: 1px solid #4C566A;
+                border-radius: 5px;
+                padding: 5px;
+                font-size: 14px;
+            }
+            QListWidget::item {
+                padding: 5px;
+                border-bottom: 1px solid #4C566A;
+            }
+            QListWidget::item:hover {
+                background-color: #434C5E;
+            }
+        """)
+        eventos_layout.addWidget(self.lista_eventos)
+        self.caixa_eventos.setLayout(eventos_layout)
+        self.eventos_column.addWidget(self.caixa_eventos)
 
         # Dicionário para armazenar os widgets de cada grupo de equipamento
         self.grupos = {}
 
         # Iniciar atualização da tela
         self.atualizar_tela()
+
+        # Aplica o tema inicial
+        self.aplicar_tema(self.tema_atual)
+
+    def alternar_tema(self):
+        """Alterna entre os temas claro e escuro."""
+        if self.tema_atual == "moderno":
+            self.tema_atual = "claro"
+            self.botao_tema.setText("Alternar Tema (Moderno)")
+        else:
+            self.tema_atual = "moderno"
+            self.botao_tema.setText("Alternar Tema (Claro)")
+        self.aplicar_tema(self.tema_atual)
+
+    def aplicar_tema(self, tema):
+        """Aplica o tema selecionado."""
+        if tema == "claro":
+            self.setStyleSheet(TEMA_CLARO)
+        elif tema == "escuro":
+            self.setStyleSheet(TEMA_ESCURO)
+        elif tema == "moderno":
+            self.setStyleSheet(TEMA_MODERNO)
+
+    def adicionar_evento(self, nome, ip, status, data_hora):
+        """Adiciona um evento à lista de últimos eventos."""
+        evento = {
+            "nome": nome,
+            "ip": ip,
+            "status": status,
+            "data_hora": data_hora
+        }
+        self.ultimos_eventos.append(evento)
+
+        # Mantém apenas os 10 últimos eventos
+        if len(self.ultimos_eventos) > 10:
+            self.ultimos_eventos.pop(0)
+
+        # Atualiza a lista de eventos na interface
+        self.lista_eventos.clear()
+        for evento in self.ultimos_eventos:
+            item = f"{evento['data_hora']} - {evento['nome']} ({evento['ip']}): {evento['status']}"
+            self.lista_eventos.addItem(item)
 
     def filtrar_ativos(self):
         """Filtra os ativos com base no texto da barra de pesquisa."""
@@ -240,7 +426,7 @@ class TelaMonitoramento(QWidget):
                 self.criar_grupo_equipamento(nome, ip)
 
             grupo = self.grupos[nome]
-            status_led = grupo.findChild(QLabel)
+            status_led = grupo.findChild(QLabel, "status_led")
             last_event_label = grupo.findChild(QLabel, "last_event_label")
             uptime_label = grupo.findChild(QLabel, "uptime_label")
             downtime_label = grupo.findChild(QLabel, "downtime_label")
@@ -249,9 +435,9 @@ class TelaMonitoramento(QWidget):
 
             status = self.status_equipamentos.get(nome, {}).get('status', 'OFFLINE')
             status_led.setStyleSheet(
-                "background-color: green; width: 20px; height: 20px; border-radius: 10px;"
+                "background-color: green; width: 12px; height: 12px; border-radius: 6px;"
                 if status == "ONLINE"
-                else "background-color: red; width: 20px; height: 20px; border-radius: 10px;"
+                else "background-color: red; width: 12px; height: 12px; border-radius: 6px;"
             )
 
             last_event_time = self.status_equipamentos.get(nome, {}).get('last_event', 'N/A')
@@ -281,8 +467,8 @@ class TelaMonitoramento(QWidget):
         # Aplica o filtro de pesquisa
         self.filtrar_ativos()
 
-        # Atualiza a tela a cada 5 segundos
-        QTimer.singleShot(5000, self.atualizar_tela)
+        # Atualiza a tela a cada 1 segundos
+        QTimer.singleShot(1000, self.atualizar_tela)
 
     def limpar_colunas(self):
         # Remove todos os widgets das colunas
@@ -301,10 +487,26 @@ class TelaMonitoramento(QWidget):
     def criar_grupo_equipamento(self, nome, ip):
         # Cria o grupo e retorna ele para ser inserido na grid
         grupo = QGroupBox(f"{nome} ({ip})")
-        grupo.setStyleSheet("QGroupBox { font-weight: bold; }")
+        grupo.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                margin: 2px;
+                padding: 5px;
+                border: 1px solid #555555;
+                border-radius: 5px;
+                font-size: 12px;
+            }
+            QLabel {
+                margin: 2px;
+                font-size: 12px;
+            }
+        """)
         grid_sub_layout = QVBoxLayout()
+        grid_sub_layout.setSpacing(2)  # Reduzir espaçamento entre widgets no layout
 
         status_led = QLabel()
+        status_led.setObjectName("status_led")
+        status_led.setFixedSize(12, 12)  # Define o tamanho fixo do círculo de status
         grid_sub_layout.addWidget(status_led)
 
         last_event_label = QLabel()
@@ -379,15 +581,18 @@ class TelaMonitoramento(QWidget):
 class TelaAdministracao(QWidget):
     def __init__(self):
         super().__init__()
-        self.equipamentos = {}  # Dicionário para armazenar os equipamentos
-        self.status_equipamentos = {}  # Dicionário para armazenar o status dos equipamentos
+        self.equipamentos = {}
+        self.status_equipamentos = {}
         self.sistema = platform.system()
         self.comando_ping = "ping -n 1 -w 1000 {}" if self.sistema == "Windows" else "ping -c 1 -W 1 {}"
-        self.log_file_path = "log_monitoramento.log"  # Caminho padrão para o arquivo de log
-        self.dados_file = "ativos.json"  # Arquivo JSON para persistência
+        self.log_file_path = "log_monitoramento.log"
+        self.dados_file = "ativos.json"
         self.tema_atual = "claro"  # Tema inicial
+        self.monitoramento_tela = None  # Referência para a tela de monitoramento
+        self.threads_monitoramento = {}  # Dicionário para armazenar as threads de monitoramento
+        self.logger = configurar_logger()  # Configura o logger global
         self.initUI()
-        self.carregar_dados()  # Carrega os dados ao iniciar
+        self.carregar_dados()
 
     def initUI(self):
         self.setWindowTitle("Administração de Equipamentos")
@@ -466,21 +671,24 @@ class TelaAdministracao(QWidget):
                             'status': "OFFLINE",
                             'last_event': "N/A",
                             'ping_time': "N/A",
-                            'historico': []  # Inicializa o histórico
+                            'historico': [],  # Inicializa o histórico
+                            'last_online_time': None,  # Inicializa o tempo online
+                            'last_offline_time': None  # Inicializa o tempo offline
                         }
                     # Atualiza a lista de equipamentos na interface
                     self.lista_equipamentos.clear()
                     for nome, ip in self.equipamentos.items():
                         self.lista_equipamentos.addItem(f"{nome} ({ip})")
                         # Inicia o monitoramento para cada equipamento carregado
-                        threading.Thread(target=self.monitorar_equipamento, args=(nome, ip), daemon=True).start()
+                        self.iniciar_monitoramento(nome, ip)
             except json.JSONDecodeError:
                 QMessageBox.warning(self, "Erro", "Arquivo de dados corrompido. Será criado um novo arquivo.")
                 self.equipamentos = {}
                 self.salvar_dados()
 
     def escolher_local_log(self):
-        caminho_log = QFileDialog.getSaveFileName(self, "Escolha o local para salvar o log", self.log_file_path, "Arquivos de Log (*.log)")
+        caminho_log = QFileDialog.getSaveFileName(self, "Escolha o local para salvar o log", self.log_file_path,
+                                                  "Arquivos de Log (*.log)")
         if caminho_log[0]:
             self.log_file_path = caminho_log[0]
             QMessageBox.information(self, "Sucesso", f"Arquivo de log será salvo em: {self.log_file_path}")
@@ -497,70 +705,74 @@ class TelaAdministracao(QWidget):
         """Valida se o nome já está cadastrado."""
         return nome not in self.equipamentos
 
+    def iniciar_monitoramento(self, nome, ip):
+        """Inicia uma thread de monitoramento para o equipamento."""
+        if nome in self.threads_monitoramento:
+            return  # Já existe uma thread para este equipamento
+
+        # Cria uma thread de monitoramento
+        thread = threading.Thread(target=self.monitorar_equipamento, args=(nome, ip), daemon=True)
+        self.threads_monitoramento[nome] = thread
+        thread.start()
+
+    def parar_monitoramento(self, nome):
+        """Para a thread de monitoramento do equipamento."""
+        if nome in self.threads_monitoramento:
+            del self.threads_monitoramento[nome]
+
     def monitorar_equipamento(self, nome, ip):
         """Monitora o status do equipamento em uma thread separada."""
-        while nome in self.equipamentos:
-            conectado, ping_time = self.verificar_conectividade(ip)
-            status_atual = "ONLINE" if conectado else "OFFLINE"
+        try:
+            while nome in self.equipamentos:
+                conectado, ping_time = self.verificar_conectividade(ip)
+                status_atual = "ONLINE" if conectado else "OFFLINE"
 
-            if self.status_equipamentos.get(nome, {}).get('status') != status_atual:
-                if status_atual == "ONLINE":
-                    self.status_equipamentos[nome]['last_online_time'] = datetime.datetime.now()
-                else:
-                    self.status_equipamentos[nome]['last_offline_time'] = datetime.datetime.now()
+                if self.status_equipamentos.get(nome, {}).get('status') != status_atual:
+                    if status_atual == "ONLINE":
+                        self.status_equipamentos[nome]['last_online_time'] = datetime.datetime.now()
+                    else:
+                        self.status_equipamentos[nome]['last_offline_time'] = datetime.datetime.now()
 
-                self.status_equipamentos[nome]['status'] = status_atual
-                self.status_equipamentos[nome]['last_event'] = datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-                self.status_equipamentos[nome]['ping_time'] = ping_time
+                    self.status_equipamentos[nome]['status'] = status_atual
+                    self.status_equipamentos[nome]['last_event'] = datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+                    self.status_equipamentos[nome]['ping_time'] = ping_time
 
-                # Adiciona o evento ao histórico
-                self.status_equipamentos[nome]['historico'].append(
-                    (datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), status_atual)
-                )
+                    # Adiciona o evento ao histórico
+                    self.status_equipamentos[nome]['historico'].append(
+                        (datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"), status_atual))
 
-                self.registrar_log(nome, ip, status_atual)
+                    # Adiciona o evento à lista de últimos eventos
+                    if self.monitoramento_tela:
+                        self.monitoramento_tela.adicionar_evento(nome, ip, status_atual,
+                                                                 datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
 
-            time.sleep(5)
+                    self.registrar_log(nome, ip, status_atual)
+
+                    time.sleep(5)
+        except Exception as e:
+            print(f"Erro na thread de monitoramento para {nome}: {e}")
 
     def verificar_conectividade(self, ip):
-        """Verifica se o equipamento está online usando o comando ping e retorna o tempo de resposta."""
-        resultado = subprocess.run(self.comando_ping.format(ip), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if resultado.returncode == 0:
-            # Decodifica a saída usando a codificação correta (cp1252 para Windows)
-            output = resultado.stdout.decode('cp1252', errors='ignore')
-            if self.sistema == "Windows":
-                match = re.search(r"tempo[=<](\d+)ms", output)
-            else:
-                match = re.search(r"time=(\d+\.?\d*) ms", output)
-            if match:
-                ping_time = match.group(1)
-                return True, ping_time
-        return False, "N/A"
+        """Verifica se o equipamento está online usando o comando ping."""
+        try:
+            comando = ["ping", "-n", "1", "-w", "1000", ip] if self.sistema == "Windows" else ["ping", "-c", "1", "-W",
+                                                                                               "1", ip]
+            resultado = subprocess.run(comando, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if resultado.returncode == 0:
+                if self.sistema == "Windows":
+                    match = re.search(r"tempo[=<](\d+)ms", resultado.stdout)
+                else:
+                    match = re.search(r"time=(\d+\.?\d*) ms", resultado.stdout)
+                if match:
+                    ping_time = match.group(1)
+                    return True, ping_time
+            return False, "N/A"
+        except Exception as e:
+            print(f"Erro ao verificar conectividade: {e}")
+            return False, "N/A"
 
     def registrar_log(self, nome, ip, status):
         """Registra o status do equipamento no arquivo de log."""
-        if not hasattr(self, 'logger'):
-            # Cria o diretório de logs se não existir
-            if not os.path.exists("logs"):
-                os.makedirs("logs")
-
-            # Gera o nome do arquivo de log com a data atual
-            data_atual = datetime.datetime.now().strftime("%d_%m_%Y")
-            nome_arquivo = f"log_monitoramento_{data_atual}.log"
-            caminho_log = os.path.join("logs", nome_arquivo)
-
-            # Configura o logger
-            self.logger = logging.getLogger(nome)
-            self.logger.setLevel(logging.INFO)
-
-            # Cria um handler para escrever no arquivo de log
-            handler = logging.FileHandler(caminho_log)
-            handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s", datefmt="%d-%m-%Y %H:%M:%S"))
-
-            # Adiciona o handler ao logger
-            self.logger.addHandler(handler)
-
-        # Registra a mensagem no log
         mensagem = f"{nome} ({ip}) está {status}"
         self.logger.info(mensagem)
 
@@ -590,12 +802,14 @@ class TelaAdministracao(QWidget):
             'status': "OFFLINE",
             'last_event': "N/A",
             'ping_time': "N/A",
-            'historico': []  # Inicializa o histórico
+            'historico': [],  # Inicializa o histórico
+            'last_online_time': None,  # Inicializa o tempo online
+            'last_offline_time': None  # Inicializa o tempo offline
         }
         self.lista_equipamentos.addItem(f"{nome} ({ip})")
 
         # Inicia o monitoramento para o novo equipamento
-        threading.Thread(target=self.monitorar_equipamento, args=(nome, ip), daemon=True).start()
+        self.iniciar_monitoramento(nome, ip)
 
         # Salva os dados no arquivo JSON
         self.salvar_dados()
@@ -612,11 +826,22 @@ class TelaAdministracao(QWidget):
             self.status_equipamentos.pop(nome, None)
             self.lista_equipamentos.takeItem(self.lista_equipamentos.row(item))
 
+            # Para a thread de monitoramento do equipamento removido
+            self.parar_monitoramento(nome)
+
+            # Remove o widget do grupo do equipamento da tela de monitoramento, se existir
+            if self.monitoramento_tela and nome in self.monitoramento_tela.grupos:
+                grupo = self.monitoramento_tela.grupos.pop(nome)  # Remove do dicionário
+                grupo.close()  # Fecha o widget
+                grupo.setParent(None)  # Remove o widget do layout
+
             # Salva os dados no arquivo JSON
             self.salvar_dados()
 
     def abrir_monitoramento(self):
-        self.monitoramento_tela = TelaMonitoramento(self.equipamentos, self.status_equipamentos, self.log_file_path)
+        # Passa o tema atual para a tela de monitoramento
+        self.monitoramento_tela = TelaMonitoramento(self.equipamentos, self.status_equipamentos, self.log_file_path,
+                                                    self.tema_atual)
         self.monitoramento_tela.show()
 
 
